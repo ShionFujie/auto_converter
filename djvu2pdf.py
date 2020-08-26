@@ -18,23 +18,19 @@ def main():
 def get_observer(path):
     observer = Observer()
     print("observer created")
-    observer.schedule(event_handler=get_event_handler(), path=path)
+    observer.schedule(event_handler=get_event_handler(Converter()), path=path)
     print("observer scheduled")
     return observer
 
-def get_event_handler():
+def get_event_handler(converter):
     def on_created(event):
-        src_path = event.src_path
-        # Execute the 'djvu2pdf' command in the desktop directory
-        process = subprocess.Popen(["djvu2pdf", src_path], cwd=desktop_path)
-        print(f"started converting: '{src_path}'")
-        process.wait()
-        print(f"finished converting: '{src_path}'")
-        os.system(f'rm "{src_path}"')
-        print(f"removed original file: {src_path}")
+        converter(event.src_path)
+    def on_modified(event):
+        print(f'[MODIFIED] {event.__dict__}')
 
     handler = RegexMatchingEventHandler(regexes=[r".*[.]djvu"])
     handler.on_created = on_created
+    handler.on_modified = on_modified
 
     return handler
   
@@ -50,6 +46,17 @@ def OnInterruptedListener(observer):
     observer.stop()
     print("observer stopped")
   return onInterrupted
+
+def Converter():
+    def convert(src_path):
+        # Execute the 'djvu2pdf' command in the desktop directory
+        process = subprocess.Popen(["djvu2pdf", src_path], cwd=desktop_path)
+        print(f"started converting: '{src_path}'")
+        process.wait()
+        print(f"finished converting: '{src_path}'")
+        os.system(f'rm "{src_path}"')
+        print(f"removed original file: {src_path}")
+    return convert
 
 if __name__ == "__main__":
   main()
